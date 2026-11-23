@@ -1,0 +1,11 @@
+# One public URL per line. Checked daily by .github/workflows/security-watch.yml.
+https://www.redioncekrezi.de/
+https://flow.redioncekrezi.de/
+https://businesssiterc.de/
+https://123serve.de/
+https://www.kidraht.de/
+https://www.geofindbar.de/
+https://www.baumdienstflow.de/
+https://redionflow-production.up.railway.app/demo
+https://kidraht-production-bc4a.up.railway.app/
+https://kidraht-production.up.railway.app/

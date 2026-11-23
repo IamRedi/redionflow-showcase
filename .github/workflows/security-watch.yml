@@ -1,0 +1,33 @@
+name: Security watch
+
+# Daily passive check of all public sites (uptime, TLS expiry, security
+# headers, SPF/DMARC) plus a production dependency audit. A failed run
+# makes GitHub email the repo owner automatically.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sites:
+    name: Sites, TLS, DNS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y -qq dnsutils >/dev/null || true
+      - run: bash .github/security/check.sh
+
+  deps:
+    name: npm audit (production deps, high+)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm audit --omit=dev --audit-level=high

@@ -1,0 +1,7 @@
+# Domains whose SPF/DMARC records are checked daily.
+redioncekrezi.de
+businesssiterc.de
+123serve.de
+kidraht.de
+geofindbar.de
+baumdienstflow.de

@@ -1,0 +1,71 @@
+# Prüfprotokoll / Verification record
+
+## Lokaler Kandidat: Baustellenrechte, 7. November 2026
+
+Die Erweiterung trennt Dokumentlesen, Upload-Rechte je Baustelle, Ingenieurrollen
+und Verwaltung. Der Inhaber kann einen gesonderten Name/PIN-Zugang privat im
+Profil einrichten. Lokale Prüfungen: 1091 Unit-Tests, 428 PostgreSQL-Integrationstests
+und ein Browser-Durchgang mit fiktiven Konten (Erteilung/Entzug, Download,
+persönlicher Empfang und getrennte Inhabersitzung) bestanden. Desktop, Telefon,
+Hell/Dunkel, kurzes Querformat, Fokus und vergrößerte Schrift wurden geprüft.
+Ein frisches verschlüsseltes Backup bestand die isolierte Wiederherstellung.
+Veröffentlichung und Aktivierung echter Konten sind getrennte Freigabeschritte.
+Die folgenden älteren CI-/Messwerte bleiben historische Ergebnisse.
+
+**Stand: 27. Oktober 2026.** Dieses Protokoll trennt, was gemessen wurde, von dem, was nur im Code vorhanden ist. Zahlen ohne Quelle gibt es hier nicht.
+
+## Automatisierte Prüfungen (CI)
+
+Quelle: GitHub Actions auf dem letzten gemergten Pull Request (#16, Commit `37ddb90`). Dieselben Schritte laufen auf jedem Pull Request; gemergt wird nur mit grüner CI.
+
+| Schritt | Ergebnis |
+|---|---|
+| ESLint (`--max-warnings 0`) | bestanden |
+| TypeScript strict (`tsc --noEmit`) | bestanden |
+| Unit-Tests (Vitest) | **423 bestanden** in 50 Dateien |
+| Integrationstests gegen eine frische PostgreSQL 16 im Container, mit eingeschränkter Datenbankrolle | **263 bestanden** in 15 Dateien |
+| Produktionsbuild (`next build`) | bestanden |
+| Ende-zu-Ende-Tests (Playwright, Chromium) gegen den Build und eine frische Datenbank, im SaaS-Modus mit eingeschaltetem RLS-Pilot (`RLS_ENFORCE=true`: Baustellen und Tagesplan laufen über eine eingeschränkte Datenbankrolle) | **25 bestanden** |
+| Secret-Scan (gitleaks) | keine Funde |
+| Docker-Demo: `docker compose up`, danach Smoke-Test: Health-Endpunkt, `/demo/workzone` lädt und zeigt die Demo-Baustelle | bestanden |
+
+Die Ende-zu-Ende-Tests prüfen unter anderem: Anmeldung beider Produkte, Anlegen und Bearbeiten von Bäumen bzw. Baustellenaufgaben in der Workzone, dass BauFlow keine Baum-Module zeigt, dass ein Mandant keine Admin-, Workzone-, Projekt-, Mitarbeiter- oder Exportdaten eines anderen Mandanten sieht, dass private Dokumente nur für den eigenen Mandanten abrufbar sind, und dass Server Actions mit fremdem `Origin` abgewiesen werden.
+
+## Manuelle Prüfungen
+
+| Prüfung | Beobachtung |
+|---|---|
+| Lighthouse 12, Mobil-Profil, lokaler Produktionsbuild (26.10.2026) | Startseite 96 / 100 / 100 / 100 (Performance, Barrierefreiheit, Best Practices, SEO); Login-Seiten 98–99 Performance, SEO 60 wegen bewusstem `noindex` |
+| `npm audit` (26.10.2026) | 0 Befunde |
+| Browser-Durchgang BauFlow (27.10.2026) | Alle Admin- und Workzone-Seiten mit den Glasfaser-Daten bei 1280 px und 430 px aufgerufen; Baum-Begriffe, überlaufende Karten und überlappende Kacheln gefunden und in #16 behoben |
+| Nächtlicher Reset der Live-Demos (27.10.2026, 02:00 UTC) | Beide Reset-Dienste protokollierten „Seed completed“: Baumdienst Musterstadt GmbH (8 Mitarbeitende, 3 Baustellen, 152 Bäume, 5 Maschinen) und Glasfaserbau Beispieltal GmbH (10 Mitarbeitende, 4 Baustellen, 114 Arbeiten, 8 Maschinen) |
+| Screenshots in der README | Aufgenommen mit Playwright/Chromium gegen einen lokalen Produktionsbuild mit denselben fiktiven Daten wie die Live-Demos, 1440 × 900 und 390 × 844 Pixel; jedes Bild einzeln angesehen |
+
+## Was nicht geprüft ist
+
+- **Externe Dienste in der Live-Demo.** KI-Assistent (OpenAI), Push (Firebase), Dateispeicher (Supabase), Stripe und Fahrzeug-GPS sind in der Demo nicht konfiguriert. Ihr Code ist durch Unit- und Integrationstests mit Test-Doubles abgedeckt; ein Live-Aufruf wurde für diese Fassung nicht gemacht.
+- **Offline-Betrieb im Feld.** Die Warteschlange im Browser existiert, ein Test mit schlechtem Mobilfunk auf einer echten Baustelle fehlt.
+- **Row-Level Security außerhalb des Pilots.** Die Policies sind für alle Mandantentabellen angelegt, durchgesetzt mit eingeschränkter Rolle werden sie nur im Pilot und nur in Wegwerf-Datenbanken. In den Live-Demos und regulären Installationen ist der Mandantenfilter der Anwendung die wirksame Grenze.
+- **Last und Skalierung.** Es gab keinen Lasttest. Realtime-Ereignisse laufen im Prozess und werden zwischen mehreren Instanzen nicht geteilt (siehe [SECURITY.md](SECURITY.md)).
+- **Fachliche Richtigkeit der Demo-Inhalte.** Baustellen, Mengen und Abläufe sind realistisch erfunden, aber keine Arbeitsanweisung.
+
+## Daten und Rechte
+
+- Das Repository enthält keine echten Kunden-, Mitarbeiter- oder Baustellendaten. Alle Demo-Firmen, Namen, Adressen, Telefonnummern und Kennzeichen sind erfunden ([`prisma/seed-data.ts`](prisma/seed-data.ts), [`prisma/seed-data-bau.ts`](prisma/seed-data-bau.ts), [`prisma/seed-data-glasfaser.ts`](prisma/seed-data-glasfaser.ts)). Koordinaten liegen in echten Städten, damit die Karten realistisch aussehen.
+- Bilder, Diagramme und Texte: Redion Cekrezi / RediON. Es wird keine Nutzungslizenz über die [LICENSE](LICENSE) hinaus gewährt.
+
+## Musterfirma tree references · 15 November 2026
+
+Source 99c69ee; deployment53240831-27cb-4988-aed4-cd733ca44ec8 ONLINE, one replica, no issues. 727 unit tests,19 mocked integration cases, lint/types/build pass. The62-case browser run had61 passes and one short-reader sizing failure; the scoped CSS correction retained all assertions and the affected flow passed in eight theme/size combinations. All62 flows are verified cumulatively. Additional100/1,000-record synthetic browser fixtures check bounded DOM/images, every record reachable, stable flips and focus; these are UI checks, not a server load benchmark. Three non-Musterfirma profile boundaries pass. Live read-only review confirms new assets,56 logical trees with18 mounted at1280×720, fixed flip positions and no outer scrolling. Existing62tables/449rows,32 resolved variables and five neighbouring services remain unchanged; backup identity preserved. Public captures show only fictitious demo data.
+
+
+## Seasonal presentation publication · 15 November 2026
+
+Owner-approved native PR208/16750da, showcase PR207/6579b67 and portfolio PR90/fb7f483 are published. Cloudflare Production8585e389-3c40-460f-85ef-e2d70d673d55 and Vercel Productiondpl_CJwCGjYQAKHDLw3LJECJ1bURAMLA are verified live; all141nativepublicfiles match the exact approved package, preserving135otherfiles including BauFlow/legal/headers. Public desktop galleries show the new winter trees and atlas. See native PUBLIC_PRESENTATION and portfolio PORTFOLIO_SYNC for scope, rollback and local-vs-live evidence. These are static/documentation releases; the operational apps remain on their existing pinned sources.
+
+
+## Photoreal gallery replacement · 15 November 2026
+
+Owner requested replacement of every remaining sketch-era tree capture. Three portfolio slots in all four locales now use the current photoreal worksite card,390×844 tree list and glass leaf-detail reader;19 gallery slots and other product data are preserved. The three retired public files were removed after originals were archived and hash-verified. The native Workzone desktop/phone pair now uses the same current pictures and localized captions; its atlas was already current. No style, application, provider or data change.
+
+Validation: native generator contract5pages/4locales/200targets and unchanged BauFlow pass;16native locale/width/theme views and8portfolio home/case flows pass with no horizontal overflow. All three new sources are present, retired filenames absent from the visible gallery and leaf lightbox closes correctly. Mandatory portfolio install/lint/types/content/build/GitHub-sync passes. Desktop card and leaf are actual read-only Musterfirma captures; phone is the real current component with56fictional read-only records, not a generated UI. Source runtime99c69ee; originals/provenance retained. Publication follows the owner’s standing request for these surfaces.
