@@ -40,7 +40,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@ai-sdk/openai": "^3.0.53",
-    "@ai-sdk/react": "^3.0.170",
+    "@ai-sdk/react": "^4.0.181",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
