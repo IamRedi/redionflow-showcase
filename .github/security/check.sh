@@ -3,13 +3,13 @@
 # No scanning, no logins, no load. Exit 1 when a CRITICAL item is found.
 set -uo pipefail
 dir="$(cd "$(dirname "$0")" && pwd)"
-crit=0; out="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
+rm -f /tmp/crit; out=/tmp/report.md; : > "$out"
 echo "## Security watch $(date -u +%F)" >> "$out"
 echo "| URL | HTTP | TLS days | HSTS | CSP | Frame | nosniff | Powered-By |" >> "$out"
 echo "|---|---|---|---|---|---|---|---|" >> "$out"
 grep -vE '^\s*(#|$)' "$dir/targets.txt" | while read -r url; do
   host="${url#https://}"; host="${host%%/*}"
-  h="$(curl -sS -o /dev/null -D - --max-time 20 -A 'security-watch' "$url" 2>/dev/null | tr -d '\r')"
+  h="$(curl -sSL -o /dev/null -D - --max-time 20 -A 'security-watch' "$url" 2>/dev/null | tr -d '\r' | awk '/^HTTP/{buf=""} {buf=buf $0 "\n"} END{printf "%s", buf}')"
   code="$(printf '%s\n' "$h" | awk 'toupper($1) ~ /^HTTP/ {c=$2} END{print c+0}')"
   has() { printf '%s\n' "$h" | grep -qiE "^$1:" && echo ok || echo "**missing**"; }
   hsts=$(has strict-transport-security); csp=$(has content-security-policy)
@@ -27,4 +27,5 @@ grep -vE '^\s*(#|$)' "$dir/mail-domains.txt" | while read -r d; do
   spf=$(dig +short TXT "$d" | grep -i 'v=spf1' | head -1); dm=$(dig +short TXT "_dmarc.$d" | grep -i 'v=DMARC1' | head -1)
   echo "| $d | ${spf:-**missing**} | ${dm:-**missing**} |" >> "$out"
 done
+cat "$out"; [ -n "${GITHUB_STEP_SUMMARY:-}" ] && cat "$out" >> "$GITHUB_STEP_SUMMARY"
 [ -f /tmp/crit ] && exit 1 || exit 0
