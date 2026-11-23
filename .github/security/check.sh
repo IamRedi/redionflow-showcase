@@ -3,7 +3,7 @@
 # No scanning, no logins, no load. Exit 1 when a CRITICAL item is found.
 set -uo pipefail
 dir="$(cd "$(dirname "$0")" && pwd)"
-crit=0; out="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
+rm -f /tmp/crit; out=/tmp/report.md; : > "$out"
 echo "## Security watch $(date -u +%F)" >> "$out"
 echo "| URL | HTTP | TLS days | HSTS | CSP | Frame | nosniff | Powered-By |" >> "$out"
 echo "|---|---|---|---|---|---|---|---|" >> "$out"
@@ -27,4 +27,5 @@ grep -vE '^\s*(#|$)' "$dir/mail-domains.txt" | while read -r d; do
   spf=$(dig +short TXT "$d" | grep -i 'v=spf1' | head -1); dm=$(dig +short TXT "_dmarc.$d" | grep -i 'v=DMARC1' | head -1)
   echo "| $d | ${spf:-**missing**} | ${dm:-**missing**} |" >> "$out"
 done
+cat "$out"; [ -n "${GITHUB_STEP_SUMMARY:-}" ] && cat "$out" >> "$GITHUB_STEP_SUMMARY"
 [ -f /tmp/crit ] && exit 1 || exit 0
