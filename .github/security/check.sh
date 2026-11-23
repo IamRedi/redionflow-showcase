@@ -9,7 +9,7 @@ echo "| URL | HTTP | TLS days | HSTS | CSP | Frame | nosniff | Powered-By |" >> 
 echo "|---|---|---|---|---|---|---|---|" >> "$out"
 grep -vE '^\s*(#|$)' "$dir/targets.txt" | while read -r url; do
   host="${url#https://}"; host="${host%%/*}"
-  h="$(curl -sS -o /dev/null -D - --max-time 20 -A 'security-watch' "$url" 2>/dev/null | tr -d '\r')"
+  h="$(curl -sSL -o /dev/null -D - --max-time 20 -A 'security-watch' "$url" 2>/dev/null | tr -d '\r' | awk '/^HTTP/{buf=""} {buf=buf $0 "\n"} END{printf "%s", buf}')"
   code="$(printf '%s\n' "$h" | awk 'toupper($1) ~ /^HTTP/ {c=$2} END{print c+0}')"
   has() { printf '%s\n' "$h" | grep -qiE "^$1:" && echo ok || echo "**missing**"; }
   hsts=$(has strict-transport-security); csp=$(has content-security-policy)
